@@ -1,1 +1,49 @@
+@use '@angular/material' as mat;
+
 /* You can add global styles to this file, and also import other style files */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+
+html {
+  color-scheme: dark;
+  @include mat.theme((color: mat.$orange-palette,
+      typography: Roboto,
+      density: 0));
+}
+
+body {
+  color-scheme: dark;
+}
+
+:root {
+  /* Filled buttons */
+  --mdc-filled-button-container-shape: 5px;
+  /* Outlined buttons */
+  --mdc-outlined-button-container-shape: 5px;
+  /* Text buttons */
+  --mdc-text-button-container-shape: 5px;
+  /* Cards */
+  --mdc-card-container-shape: 5px;
+  /* Dialogs */
+  --mdc-dialog-container-shape: 12px;
+  /* Menus */
+  --mat-menu-container-shape: 10px;
+  /* Select dropdowns */
+  --mat-select-panel-shape: 6px;
+
+  --mat-sys-corner-full: 5px;
+}
+
+a {
+  text-decoration: none;
+  color: var(--mat-sys-primary);
+}
