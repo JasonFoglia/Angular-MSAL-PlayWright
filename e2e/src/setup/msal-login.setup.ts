@@ -3,6 +3,8 @@ import { test as setup } from '@playwright/test';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { tryGetEnviromentVariable } from '../utils';
+import { DefaultAzureCredential } from '@azure/identity';
+import { SecretClient } from '@azure/keyvault-secrets';
 import {
   acquireTokenWithUsernameAndPassword,
   createCachableAccessToken,
@@ -14,6 +16,17 @@ import {
 const sessionStorageFilePath = tryGetEnviromentVariable(
   'SESSION_STORAGE_FILE_PATH'
 );
+const keyVaultName = tryGetEnviromentVariable('AZURE_KEY_VAULT_NAME');
+const keyVaultUrl = `https://${keyVaultName}.vault.azure.net`;
+
+const credential = new DefaultAzureCredential();
+const secretClient = new SecretClient(keyVaultUrl, credential);
+
+async function getSecret(secretName: string): Promise<string> {
+  const secret = await secretClient.getSecret(secretName);
+  return secret.value || '';
+}
+
 
 setup.skip(
   existsSync(
@@ -78,8 +91,8 @@ setup('msal-login', async ({ request, page }) => {
     ScopeSet.fromString(scopes),
     externalTokenResponse.expires_in || 0,
     externalTokenResponse.ext_expires_in ||
-      externalTokenResponse.expires_in ||
-      0
+    externalTokenResponse.expires_in ||
+    0
   );
   if (accessToken) {
     tokens.push({ ...accessToken });
