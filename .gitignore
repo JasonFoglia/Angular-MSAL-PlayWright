@@ -50,3 +50,4 @@ node_modules/
 e2e/.env
 src/environments/environment.ts
 .state/session-storage.json
+.ignore/secret
