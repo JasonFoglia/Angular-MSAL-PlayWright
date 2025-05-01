@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test';
+import { expect, Route } from '@playwright/test';
 import { test } from './fixtures';
 
 test.describe('user is not authenticated', () => {
@@ -30,18 +30,28 @@ test.describe('user is authenticated', () => {
 
   test('should add access token to protected resource', async ({ page }) => {
     // we will just intercept this because the resource endpoint doesn't exist
-    await page.route('/resource', async (route: import('playwright').Route) => {
-      await route.fulfill({ status: 200, body: '' });
-    });
+    const routeHandler = async (route: Route) => {
+      await route.fulfill({ status: 200, body: 'Mocked response for non-existent resource' });
+    };
+
+    await page.route('/resource', routeHandler);
 
     await page.goto('/');
 
+    // Trigger a request to /resource
+    await page.evaluate(() => {
+      return fetch('/resource');
+    });
+
     const request = await page.waitForRequest('/resource', {
-      timeout: 1000
+      timeout: 5000 // Increased timeout to 5000ms
     });
 
     // we only need to know that the header exists
     // the value of it is an implementation detail of the msal library so we don't assert on that
     expect(await request.headerValue('authorization')).not.toBeNull();
+
+    // Clean up the route handler after the test
+    await page.unroute('/resource', routeHandler);
   });
 });

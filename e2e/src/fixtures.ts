@@ -2,6 +2,7 @@ import { test as base, Page } from '@playwright/test';
 import type { SessionStorageState } from '../../playwright.config';
 import { readFileSync } from 'fs';
 import { tryGetEnviromentVariable } from './utils';
+import { authenticateWithServicePrincipal } from './service-principal-login';
 
 export const test = base.extend<
   {
@@ -45,7 +46,18 @@ export const test = base.extend<
         'baseURL is not set; skipping session storage restoration init script'
       );
     } else {
+
+      authenticateWithServicePrincipal();
+
       const sessionStorageState = readFileSync(sessionStorageFilePath, 'utf-8');
+
+      if (!sessionStorageState) {
+        console.warn(
+          `sessionStorage state file not found at ${sessionStorageFilePath}`
+        );
+        return;
+      }
+
       const sessionStorageEntries = Object.entries(
         JSON.parse(sessionStorageState) as Record<string, string>
       );

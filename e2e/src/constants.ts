@@ -1,0 +1,1 @@
+export const sessionPath = '.state/session-storage.json'
