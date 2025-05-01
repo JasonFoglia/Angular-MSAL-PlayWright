@@ -27,12 +27,12 @@
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@azure/identity": "^4.9.1",
-    "@azure/keyvault-secrets": "^4.9.0",
     "@angular-builders/jest": "^19.0.1",
     "@angular-devkit/build-angular": "^19.2.9",
     "@angular/cli": "^19.2.9",
     "@angular/compiler-cli": "^19.2.0",
+    "@azure/identity": "^4.9.1",
+    "@azure/keyvault-secrets": "^4.9.0",
     "@playwright/test": "^1.52.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.15.2",

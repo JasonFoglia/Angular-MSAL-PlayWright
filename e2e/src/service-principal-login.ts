@@ -1,50 +1,80 @@
 import { ConfidentialClientApplication } from '@azure/msal-node';
-import { tryGetEnviromentVariable } from './utils';
 import { writeFileSync } from 'fs';
 import { sessionPath } from './constants';
 import path from 'path';
+import { SecretClient } from "@azure/keyvault-secrets";
+import { DefaultAzureCredential } from "@azure/identity";
+import { tryGetEnviromentVariable } from './utils';
 
+const keyVaultUri = tryGetEnviromentVariable('KEY_VAULT_URI') || "";
 
-const clientId = tryGetEnviromentVariable('MSAL_CLIENT_ID');
-const authority = tryGetEnviromentVariable('MSAL_AUTHORITY');
-const secret = tryGetEnviromentVariable('MSAL_SECRET');
+const credential = new DefaultAzureCredential();
+const client = new SecretClient(keyVaultUri, credential);
 
-const config = {
+async function getSecret(secretName: string): Promise<string | undefined> {
+  try {
+    const latestSecret = await client.getSecret(secretName);
+    return latestSecret.value || tryGetEnviromentVariable(secretName);
+  } catch (error) {
+    console.error(`Error retrieving secret ${secretName} from Key Vault:`, error);
+    return undefined;
+  }
+}
+
+async function initializeMsalConfig() {
+  const clientId = await getSecret('MSAL-CLIENT-ID');
+  const authority = await getSecret('MSAL-AUTHORITY');
+  const secret = await getSecret('MSAL-SECRET');
+
+  if (!clientId || !authority || !secret) {
+    throw new Error('Failed to retrieve MSAL configuration from Azure Key Vault.');
+  }
+
+  const config = {
     auth: {
-        clientId: clientId, // Replace with the appId from the service principal
-        clientSecret: secret, // Replace with the password from the service principal
-        authority: authority, // Replace with the tenant ID
+      clientId: clientId,
+      clientSecret: secret,
+      authority: authority,
     },
-};
-
-const cca = new ConfidentialClientApplication(config);
+  };
+  return config;
+}
 
 export async function authenticateWithServicePrincipal() {
-    const tokenRequest = {
-        scopes: [
-            'https://graph.microsoft.com/.default',
-            '/resource'
-        ], // Replace with the required scopes
-    };
+  let config;
+  try {
+    config = await initializeMsalConfig();
+  } catch (error) {
+    console.error('Failed to initialize MSAL config:', error);
+    return;
+  }
 
-    try {
-        const response = await cca.acquireTokenByClientCredential(tokenRequest);
-        console.log('Access Token:', response?.accessToken);
+  const cca = new ConfidentialClientApplication(config);
 
-        const sessionStorageState = JSON.stringify({
-            'msal.idtoken': response?.idToken,
-            'msal.accesstoken': response?.accessToken,
-        });
+  const tokenRequest = {
+    scopes: [
+      'https://graph.microsoft.com/.default',
+      '/resource'
+    ],
+  };
 
-        const currentPath = process.cwd();
-        const fullSessionPath = path.join(currentPath, sessionPath);
-        console.log('Full Session Path:', fullSessionPath);
+  try {
+    const response = await cca.acquireTokenByClientCredential(tokenRequest);
+    console.log('Access Token:', response?.accessToken);
 
-        writeFileSync(fullSessionPath, sessionStorageState);
-        console.log('MSAL sessionStorage state saved.');
+    const sessionStorageState = JSON.stringify({
+      'msal.idtoken': response?.idToken,
+      'msal.accesstoken': response?.accessToken,
+    });
 
-        // Use the token for further API calls or save it for Playwright session storage
-    } catch (error) {
-        console.error('Error acquiring token:', error);
-    }
+    const currentPath = process.cwd();
+    const fullSessionPath = path.join(currentPath, sessionPath);
+    console.log('Full Session Path:', fullSessionPath);
+
+    writeFileSync(fullSessionPath, sessionStorageState);
+    console.log('MSAL sessionStorage state saved.');
+
+  } catch (error) {
+    console.error('Error acquiring token:', error);
+  }
 }
