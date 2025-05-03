@@ -14,7 +14,7 @@ const client = new SecretClient(keyVaultUri, credential);
 async function getSecret(secretName: string): Promise<string | undefined> {
   try {
     const latestSecret = await client.getSecret(secretName);
-    return latestSecret.value || tryGetEnviromentVariable(secretName);
+    return latestSecret.value || tryGetEnviromentVariable(secretName.replace('-', '_'));
   } catch (error) {
     console.error(`Error retrieving secret ${secretName} from Key Vault:`, error);
     return undefined;
@@ -54,7 +54,6 @@ export async function authenticateWithServicePrincipal() {
   const tokenRequest = {
     scopes: [
       'https://graph.microsoft.com/.default',
-      '/resource'
     ],
   };
 
