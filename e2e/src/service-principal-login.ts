@@ -3,13 +3,10 @@ import { writeFileSync } from 'fs';
 import { sessionPath } from './constants';
 import path from 'path';
 import { SecretClient } from "@azure/keyvault-secrets";
-import { DefaultAzureCredential } from "@azure/identity";
+import { InteractiveBrowserCredential } from "@azure/identity";
 import { tryGetEnviromentVariable } from './utils';
 
 const keyVaultUri = tryGetEnviromentVariable('KEY_VAULT_URI') || "";
-
-const credential = new DefaultAzureCredential();
-const client = new SecretClient(keyVaultUri, credential);
 
 async function getSecret(secretName: string): Promise<string | undefined> {
   try {
@@ -20,6 +17,18 @@ async function getSecret(secretName: string): Promise<string | undefined> {
     return undefined;
   }
 }
+
+const msalConfig = {
+  clientId: tryGetEnviromentVariable('MSAL_CLIENT_ID') || "",
+  tenantId: tryGetEnviromentVariable('MSAL_TENANT_ID') || "",
+  redirectUri: tryGetEnviromentVariable('REDIRECT_URI') || "http://localhost:4200"
+};
+// Configure the interactive browser credential with appropriate client ID and tenant ID
+const credential = new InteractiveBrowserCredential(msalConfig);
+
+const client = new SecretClient(keyVaultUri, credential, {
+  disableChallengeResourceVerification: true
+});
 
 async function initializeMsalConfig() {
   const clientId = await getSecret('MSAL-CLIENT-ID');

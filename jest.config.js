@@ -1,25 +1,21 @@
-export default {
-  displayName: 'app',
-  preset: './jest.preset.js',
+globalThis.ngJest = {
+  skipNgcc: true,
+  tsconfig: 'tsconfig.spec.json', // this is the project root tsconfig
+};
+
+/** @type {import('@jest/types').Config.InitialOptions} */
+module.exports = {
+  preset: 'jest-preset-angular',
+  testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/src/setup-jest.ts'],
-  coverageDirectory: './coverage/app',
   transform: {
-    '^.+\\.(ts|mjs|js|html)$': [
-      'jest-preset-angular',
-      {
-        tsconfig: '<rootDir>/tsconfig.spec.json',
-        stringifyContentPathRegex: '\\.(html|svg)$',
-      },
-    ],
+    '^.+\\.ts$': 'ts-jest', // Only transform .ts files
   },
-  transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$)'],
-  snapshotSerializers: [
-    'jest-preset-angular/build/serializers/no-ng-attributes',
-    'jest-preset-angular/build/serializers/ng-snapshot',
-    'jest-preset-angular/build/serializers/html-comment',
+  transformIgnorePatterns: [
+    '/node_modules/(?!flat)/', // Exclude modules except 'flat' from transformation
   ],
-  testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
-    '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
-  ],
+  moduleDirectories: ['node_modules', 'src'],
+  fakeTimers: {
+    enableGlobally: true,
+  }
 };

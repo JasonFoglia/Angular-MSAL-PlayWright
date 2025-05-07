@@ -1,10 +1,10 @@
 export function tryGetEnviromentVariable(
   name: string,
   defaultValue?: string
-): string {
-  const value = process.env[name] ?? defaultValue;
-  if (!value) {
-    throw new Error(`${name} must be set in the .env file or provided as a default value`);
+): string | undefined {
+  if (process.env[name] !== undefined) {
+    const value = process.env[name] ?? defaultValue;
+    return value;
   }
-  return value;
+  return undefined;
 }
