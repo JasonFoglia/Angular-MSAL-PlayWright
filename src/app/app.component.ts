@@ -48,7 +48,9 @@ export class AppComponent implements OnInit, OnDestroy {
     @Inject(MSAL_GUARD_CONFIG) private msalGuardConfig: MsalGuardConfiguration,
     private authService: MsalService,
     private msalBroadcastService: MsalBroadcastService
-  ) { }
+  ) {
+    console.log('AppComponent constructor called');
+  }
 
   ngOnInit(): void {
     this.authService.handleRedirectObservable().subscribe();

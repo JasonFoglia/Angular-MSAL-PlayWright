@@ -8,7 +8,6 @@ export const SESSION_STORAGE_FILE_PATH = path.join(
   '.state/session-storage.json'
 );
 
-
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
@@ -17,20 +16,10 @@ import dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, 'e2e/.env') });
 
-
-
 process.env['SESSION_STORAGE_FILE_PATH'] = SESSION_STORAGE_FILE_PATH;
-
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// require('dotenv').config();
 
 // Config value to use for passing session storage state to tests or fixtures
 export type SessionStorageState = { sessionStorageFilePath: string };
-
-
 
 /**
  * See https://playwright.dev/docs/test-configuration.
