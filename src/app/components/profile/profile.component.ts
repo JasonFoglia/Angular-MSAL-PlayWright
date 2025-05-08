@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, Signal, ViewEncapsulation } from '@
 import { environment } from '../../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { MsalService } from '@azure/msal-angular';
 
 type ProfileType = {
   givenName?: string;
@@ -22,10 +23,13 @@ export class ProfileComponent {
 
   profile: Signal<ProfileType | undefined>;
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private authService: MsalService,
+    private http: HttpClient) {
     this.profile = toSignal(
-      this.http.get<ProfileType>(environment.apiConfig.uri)
-      , { initialValue: undefined });
+      this.http.get<ProfileType>(environment.apiConfig.uri),
+      { initialValue: undefined }
+    );
   }
 
   ngOnInit(): void {
