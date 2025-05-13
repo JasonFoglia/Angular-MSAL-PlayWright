@@ -63,31 +63,52 @@ jest.mock('@azure/msal-angular', () => ({
     msalSubject$ = { pipe: jest.fn().mockReturnValue({ subscribe: jest.fn() }) };
     inProgress$ = { pipe: jest.fn().mockReturnValue({ subscribe: jest.fn() }) };
   },
+  MsalModule: {
+    forRoot: jest.fn(),
+  },
 }));
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { ProfileComponent } from './profile.component';
 import { provideHttpClient } from '@angular/common/http';
-import { MsalService } from '@azure/msal-angular';
-import { mockMsalService } from 'src/testing/mocks';
+import { MSAL_GUARD_CONFIG, MsalBroadcastService, MsalModule, MsalService } from '@azure/msal-angular';
+import { CommonModule } from '@angular/common';
 
-describe('ProfileComponent', () => {
+fdescribe('ProfileComponent', () => {
   let component: ProfileComponent;
   let fixture: ComponentFixture<ProfileComponent>;
+  let mockMsalService: any;
+  let mockMsalBroadcastService: any;
 
   beforeEach(async () => {
+    mockMsalService = new (jest.requireMock('@azure/msal-angular').MsalService)();
+    mockMsalBroadcastService = new (jest.requireMock('@azure/msal-angular').MsalBroadcastService)();
+
     await TestBed.configureTestingModule({
-      imports: [ProfileComponent],
+      imports: [
+        CommonModule,
+        ProfileComponent,
+
+        jest.requireMock('@azure/msal-angular').MsalModule,
+      ],
       providers: [
         provideHttpClient(),
         {
           provide: MsalService,
-          useValue: mockMsalService
+          useValue: mockMsalService,
+        },
+        {
+          provide: MsalBroadcastService,
+          useValue: mockMsalBroadcastService,
+        },
+        {
+          provide: MSAL_GUARD_CONFIG,
+          useValue: {
+            authRequest: { scopes: ['user.read'] },
+          },
         },
       ],
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ProfileComponent);
     component = fixture.componentInstance;
