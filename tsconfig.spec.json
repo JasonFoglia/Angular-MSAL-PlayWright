@@ -8,12 +8,7 @@
       "node"
     ],
     "esModuleInterop": true,
-    "baseUrl": "./",
-    "paths": {
-      "src/*": [
-        "src/*"
-      ]
-    }
+    "emitDecoratorMetadata": false,
   },
   "files": [
     "src/setup-jest.ts",

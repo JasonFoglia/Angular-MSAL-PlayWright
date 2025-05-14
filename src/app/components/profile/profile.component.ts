@@ -12,7 +12,7 @@ type ProfileType = {
 
 @Component({
   selector: 'app-profile',
-  imports: [],
+  standalone: true,
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss',
   encapsulation: ViewEncapsulation.None,

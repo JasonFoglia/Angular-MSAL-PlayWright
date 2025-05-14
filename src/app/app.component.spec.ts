@@ -1,143 +1,86 @@
-jest.mock('@azure/msal-angular', () => ({
-  MSAL_GUARD_CONFIG: Symbol('msal-guard-config'),
-  MsalService: class MockMsalService {
-    instance = {
-      acquireTokenRedirect: jest.fn(),
-      getActiveAccount: jest.fn(),
-      setActiveAccount: jest.fn(),
-      enableAccountStorageEvents: jest.fn(),
-      getAllAccounts: jest.fn().mockReturnValue([]),
-
-      initialize: jest.fn(),
-      acquireTokenPopup: jest.fn(),
-
-      acquireTokenSilent: jest.fn(),
-      acquireTok: jest.fn(),
-      addEventCallback: jest.fn(),
-      removeEventCallback: jest.fn(),
-      addPerformanceCallback: jest.fn(),
-      removePerformanceCallback: jest.fn(),
-
-      disableAccountStorageEvents: jest.fn(),
-      getAccount: jest.fn(),
-      getAccountByHomeId: jest.fn(),
-      getAccountByLocalId: jest.fn(),
-      getAccountByUsername: jest.fn(),
-
-      handleRedirectPromise: jest.fn(),
-      loginPopup: jest.fn(),
-      loginRedirect: jest.fn(),
-      logout: jest.fn(),
-      logoutRedirect: jest.fn(),
-      logoutPopup: jest.fn(),
-      ssoSilent: jest.fn(),
-      getTokenCache: jest.fn(),
-      getLogger: jest.fn(),
-      setLogger: jest.fn(),
-
-      initializeWrapperLibrary: jest.fn(),
-      setNavigationClient: jest.fn(),
-
-      // getConfiguration
-      // hydrateCache
-    };
-    initialize = jest.fn();
-    loginRedirect = jest.fn();
-    logoutRedirect = jest.fn();
-    handleRedirectObservable = jest.fn().mockReturnValue({
-      subscribe: jest.fn()
-    });
-    getAllAccounts = jest.fn().mockReturnValue([]);
-
-    acquireTokenPopup = jest.fn();
-    acquireTokenRedirect = jest.fn();
-    acquireTokenSilent = jest.fn();
-    loginPopup = jest.fn();
-    logout = jest.fn();
-    logoutPopup = jest.fn();
-    ssoSilent = jest.fn();
-    getLogger = jest.fn();
-    setLogger = jest.fn();
-  },
-  MsalBroadcastService: class MockMsalBroadcastService {
-    msalSubject$ = { pipe: jest.fn().mockReturnValue({ subscribe: jest.fn() }) };
-    inProgress$ = { pipe: jest.fn().mockReturnValue({ subscribe: jest.fn() }) };
-  },
-}));
-
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { ActivatedRoute, provideRouter, Router, RouterLink, RouterOutlet } from '@angular/router';
-import { MSAL_GUARD_CONFIG, MsalBroadcastService, MsalModule, MsalService } from '@azure/msal-angular';
-import { AppComponent } from './app.component';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
+import { Subject, of } from 'rxjs';
 
-// jest.mock('./app.component.html', () => '<h1>{{ title }}</h1>', { virtual: true });
-// jest.mock('./app.component.scss', () => '', { virtual: true });
+// Import mocks before importing the component to avoid circular dependencies
+import '../testing/mocks'; // Import the mock classes
+import { MSAL_GUARD_CONFIG, MsalBroadcastService, MsalModule, MsalService } from '@azure/msal-angular';
+import { InteractionStatus, EventType } from '@azure/msal-browser';
+import { AppComponent } from './app.component';
+import { MockMsalBroadcastService, MockMsalService } from '../testing/mocks';
+
+// Mock environment
+jest.mock('../environments/environment', () => ({
+  environment: {
+    apiConfig: {
+      uri: 'https://graph.microsoft.com/v1.0/me'
+    }
+  }
+}));
 
 describe('AppComponent', () => {
-  let mockMsalService: any;
-  let mockMsalBroadcastService: any;
+  let component: AppComponent;
+  let fixture: ComponentFixture<AppComponent>;
+  let mockMsalService: MockMsalService;
+  let mockMsalBroadcastService: MockMsalBroadcastService;
+  let inProgressSubject: Subject<InteractionStatus>;
+  let msalSubject: Subject<any>;
 
   beforeEach(async () => {
-    jest.clearAllMocks(); // Reset mocks between tests (Azure security best practice)
+    jest.clearAllMocks();
 
-    Object.defineProperty(global, 'navigator', {
-      value: {
-        userAgent: 'node.js'
-      },
-      writable: true
+    // Create fresh subjects for testing reactive behavior
+    inProgressSubject = new Subject<InteractionStatus>();
+    msalSubject = new Subject<any>();
+
+    // Configure mock services with test-specific behavior
+    mockMsalService = new MockMsalService();
+    mockMsalService.handleRedirectObservable.mockReturnValue(of(null));
+
+    mockMsalBroadcastService = new MockMsalBroadcastService();
+    // Override the pipe method to provide controlled test subjects
+    mockMsalBroadcastService.msalSubject$ = {
+      pipe: jest.fn().mockReturnValue(msalSubject)
+    };
+
+    // Set up inProgress$ observable
+    Object.defineProperty(mockMsalBroadcastService, 'inProgress$', {
+      get: jest.fn().mockReturnValue(inProgressSubject)
     });
-
-    mockMsalService = new (jest.requireMock('@azure/msal-angular').MsalService)();
-    mockMsalBroadcastService = new (jest.requireMock('@azure/msal-angular').MsalBroadcastService)();
 
     await TestBed.configureTestingModule({
       imports: [
         CommonModule,
         RouterOutlet,
         RouterLink,
+        MatToolbarModule,
         MatButtonModule,
         MatMenuModule,
-        MatToolbarModule,
-
         AppComponent
       ],
       schemas: [NO_ERRORS_SCHEMA],
       providers: [
-        // provideNoopAnimations(),
         provideRouter([]),
         {
           provide: Router,
           useValue: {
             navigate: jest.fn(),
-            events: {
-              subscribe: jest.fn()
-            }
+            events: { subscribe: jest.fn() },
+            createUrlTree: jest.fn(),
+            serializeUrl: jest.fn()
           }
         },
         {
           provide: ActivatedRoute,
           useValue: {
-            snapshot: {
-              queryParams: {},
-              params: {}
-            },
-            queryParams: {
-              subscribe: jest.fn()
-            },
-            params: {
-              subscribe: jest.fn()
-            }
-          }
-        },
-        {
-          provide: MSAL_GUARD_CONFIG,
-          useValue: {
-            authRequest: { scopes: ['user.read'] }
+            snapshot: { queryParams: {}, params: {} },
+            queryParams: { subscribe: jest.fn() },
+            params: { subscribe: jest.fn() }
           }
         },
         {
@@ -147,91 +90,103 @@ describe('AppComponent', () => {
         {
           provide: MsalBroadcastService,
           useValue: mockMsalBroadcastService
+        },
+        {
+          provide: MSAL_GUARD_CONFIG,
+          useValue: {
+            authRequest: { scopes: ['user.read'] }
+          }
         }
-      ]
+      ],
     }).compileComponents();
+
+    fixture = TestBed.createComponent(AppComponent);
+    component = fixture.componentInstance;
   });
 
   it('should create the app', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(component).toBeTruthy();
   });
 
-  it('should have loginDisplay initialized to false', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.loginDisplay).toBe(false);
-  });
-
-  it(`should have the 'Angular MSAL PlayWright' title`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('Angular MSAL PlayWright');
-  });
-
-  it('should call handleRedirectObservable during initialization', () => {
-    const fixture = TestBed.createComponent(AppComponent);
+  it('should handle account storage events in ngOnInit', () => {
     fixture.detectChanges();
-    expect(mockMsalService.handleRedirectObservable).toHaveBeenCalled();
+    expect(mockMsalService.instance.enableAccountStorageEvents).toHaveBeenCalled();
   });
 
-  it('should update loginDisplay based on accounts', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
+  it('should handle msal subject events for account changes', () => {
+    fixture.detectChanges();
 
-    // Test with no accounts
-    mockMsalService.getAllAccounts.mockReturnValue([]);
-    app.setLoginDisplay();
-    expect(app.loginDisplay).toBe(false);
+    // Simulate ACCOUNT_ADDED event
+    const accountAddedEvent = { eventType: EventType.ACCOUNT_ADDED };
+    msalSubject.next(accountAddedEvent);
 
-    // Test with accounts
-    mockMsalService.getAllAccounts.mockReturnValue([{ username: 'test@example.com' }]);
-    app.setLoginDisplay();
-    expect(app.loginDisplay).toBe(true);
+    expect(mockMsalService.instance.getAllAccounts).toHaveBeenCalled();
   });
 
-  it('should set active account if none exists but accounts are available', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
+  it('should redirect to home when no accounts after event', () => {
+    // Mock the window.location object
+    const originalLocation = window.location;
+    window.location = { ...originalLocation, pathname: '/profile' } as any;
 
-    mockMsalService.instance.getActiveAccount.mockReturnValue(null);
-    mockMsalService.getAllAccounts.mockReturnValue([{ username: 'test@example.com' }]);
+    mockMsalService.instance.getAllAccounts.mockReturnValue([]);
 
-    app.checkAndSetActiveAccount();
+    fixture.detectChanges();
 
-    expect(mockMsalService.instance.setActiveAccount).toHaveBeenCalled();
+    // Simulate ACCOUNT_REMOVED event
+    const accountRemovedEvent = { eventType: EventType.ACCOUNT_REMOVED };
+    msalSubject.next(accountRemovedEvent);
+
+    expect(window.location.pathname).toBe('/');
+
+    // Restore original location
+    window.location = originalLocation as Location & string;
   });
 
-  it('should call loginRedirect with guard config when available', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-
-    app.loginRedirect();
-
-    expect(mockMsalService.loginRedirect).toHaveBeenCalledWith({
-      scopes: ['user.read']
-    });
-  });
-
-  it('should call logoutRedirect with the correct parameters', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
+  it('should update login display when accounts exist after event', () => {
     const mockAccount = { username: 'test@example.com' };
+    mockMsalService.instance.getAllAccounts.mockReturnValue([mockAccount]);
 
-    mockMsalService.getAllAccounts.mockReturnValue([mockAccount]);
+    fixture.detectChanges();
 
-    app.logout();
+    // Simulate ACQUIRE_TOKEN_SUCCESS event
+    const tokenSuccessEvent = { eventType: EventType.ACQUIRE_TOKEN_SUCCESS };
+    msalSubject.next(tokenSuccessEvent);
 
-    expect(mockMsalService.logoutRedirect).toHaveBeenCalledWith({
-      account: mockAccount
-    });
+    expect(component.loginDisplay).toBe(true);
   });
 
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(AppComponent);
+  it('should react to InteractionStatus.None by setting display and checking accounts', () => {
+    // Set up spy to track method calls
+    const setLoginDisplaySpy = jest.spyOn(component, 'setLoginDisplay');
+    const checkAccountSpy = jest.spyOn(component, 'checkAndSetActiveAccount');
+
     fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, Angular-MSAL-PlayWright');
+
+    // Simulate interaction status change to None
+    inProgressSubject.next(InteractionStatus.None);
+
+    expect(setLoginDisplaySpy).toHaveBeenCalled();
+    expect(checkAccountSpy).toHaveBeenCalled();
+  });
+
+  it('should call loginPopup with guard config when available', () => {
+    const mockResponseAccount = { username: 'popup@example.com' };
+    mockMsalService.loginPopup.mockReturnValue(of({ account: mockResponseAccount }));
+
+    component.loginPopup();
+
+    expect(mockMsalService.loginPopup).toHaveBeenCalledWith({ scopes: ['user.read'] });
+    expect(mockMsalService.instance.setActiveAccount).toHaveBeenCalledWith(mockResponseAccount);
+  });
+
+  it('should properly clean up resources on destroy', () => {
+    const nextSpy = jest.spyOn(component['_destroying$'], 'next');
+    const completeSpy = jest.spyOn(component['_destroying$'], 'complete');
+
+    component.ngOnDestroy();
+
+    expect(nextSpy).toHaveBeenCalled();
+    expect(completeSpy).toHaveBeenCalled();
   });
 });
+

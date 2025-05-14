@@ -52,3 +52,4 @@ src/environments/environment.ts
 .state/session-storage.json
 .ignore
 e2e/2.env
+.jest-cache
