@@ -13,8 +13,9 @@ test.describe('user is not authenticated', () => {
 
     // eslint-disable-next-line playwright/no-conditional-in-test
     const expectedUrl = process.env['MSAL_AUTHORITY'] || '';
+    const currentUrl = page.url();
 
-    expect(page.url()).toMatch(expectedUrl);
+    expect(currentUrl.includes(expectedUrl)).toBeTruthy();
   });
 });
 

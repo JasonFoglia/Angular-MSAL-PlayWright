@@ -16,6 +16,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, 'e2e/.env') });
 
+console.log('DEBUG: Value of KEY_VAULT_URI is:', process.env['KEY_VAULT_URI']);
+
 process.env['SESSION_STORAGE_FILE_PATH'] = SESSION_STORAGE_FILE_PATH;
 
 // Config value to use for passing session storage state to tests or fixtures
